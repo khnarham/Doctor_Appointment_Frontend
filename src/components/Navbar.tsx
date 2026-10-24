@@ -27,7 +27,7 @@ interface NavLink {
 const NAV_LINKS: NavLink[] = [
   { name: "Home", href: "#hero" },
   { name: "Specialties", href: "#specialties" },
-  { name: "Our Doctors", href: "#doctors" },
+  { name: "Our Doctors", href: "doctors" },
   { name: "How It Works", href: "#process" },
   { name: "Clinic Hours", href: "#hours" },
 ];
@@ -121,7 +121,7 @@ const handleLogout = async () => {
           </div>
           <div className="flex flex-col">
             <span className="text-lg font-bold tracking-tight text-zinc-900 leading-tight">
-              Aria Health
+              CareClinic
             </span>
             <span className="text-[11px] font-semibold text-emerald-600 tracking-wider uppercase">
               Primary Care Clinic

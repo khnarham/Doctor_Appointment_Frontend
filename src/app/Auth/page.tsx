@@ -25,7 +25,6 @@ import {
 } from "@/lib/validations/auth";
 import { AuthService } from "@/services/Service";
 import { InputField } from "@/components/ui/InputFeild";
-import { loginAction } from "../actions/route";
 import { useRouter } from "next/navigation"; 
 
 export default function AuthPage() {
@@ -109,7 +108,7 @@ export default function AuthPage() {
             </div>
             <div className="flex flex-col">
               <span className="text-lg font-bold tracking-tight text-zinc-900 leading-tight">
-                Aria Health
+                CareClinc
               </span>
               <span className="text-[10px] font-semibold text-emerald-600 tracking-widest uppercase">
                 Primary Care

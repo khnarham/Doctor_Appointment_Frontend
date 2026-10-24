@@ -25,7 +25,7 @@ interface DoctorFiltersProps {
   setSelectedSpecialization: (v: string) => void;
   maxFee: number;
   setMaxFee: (v: number) => void;
-  specializations: Specialization[];
+  specializations?: Specialization[];
   defaultMaxFee?: number;
 }
 
@@ -56,10 +56,13 @@ export function DoctorFilters({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const selectedSpecObj = specializations.find(
+
+  const safeSpecializations = specializations ?? [];
+
+  const selectedSpecObj = safeSpecializations.find(
     (s) => s.id === selectedSpecialization
   );
-
+  
   const isFilterActive =
     searchTerm.trim() !== '' ||
     selectedSpecialization !== '' ||
@@ -207,7 +210,7 @@ export function DoctorFilters({
                     )}
                   </button>
 
-                  {specializations.map((spec) => {
+                  {specializations?.map((spec) => {
                     const isSelected = selectedSpecialization === spec.id;
                     return (
                       <button

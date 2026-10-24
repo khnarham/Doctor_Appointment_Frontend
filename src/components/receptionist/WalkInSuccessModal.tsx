@@ -90,7 +90,7 @@ export function WalkInSuccessModal({ patient, isOpen, onClose, onResetForm }: Wa
             onClick={() => {
               onClose();
               // Navigate to appointment booking page with patient_id pre-filled
-              window.location.href = `/receptionist/appointments/book?patient_id=${patient.id}`;
+              window.location.href = `/dashboard/receptionist/register-walk-in/book-appointment?patient_id=${patient.id}`;
             }}
             className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs shadow-lg shadow-teal-600/20 transition-colors"
           >

@@ -34,11 +34,14 @@ export default function SpecializationsPage() {
   const [editingItem, setEditingItem] = useState<Specialization | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
-  // 1. QUERY: Fetch All
-  const { data: specializations = [], isLoading } = useQuery({
+  // 1. QUERY: Fetch All (Safely defaulted to empty array)
+  const { data: rawSpecializations = [], isLoading } = useQuery({
     queryKey: ['specializations'],
     queryFn: ListSpecialization,
   });
+
+  // Ensure specializations is ALWAYS a safe array
+  const specializations = Array.isArray(rawSpecializations) ? rawSpecializations : [];
 
   // 2. MUTATION: Update Specialization
   const updateMutation = useMutation({
@@ -59,12 +62,20 @@ export default function SpecializationsPage() {
     },
   });
 
+  // Safe Filtering & Sorting with null guards
   const filteredItems = specializations
-    .filter((item) =>
-      item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.description.toLowerCase().includes(searchQuery.toLowerCase())
-    )
-    .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+    .filter((item) => {
+      if (!item) return false;
+      const name = String(item.name || '').toLowerCase();
+      const desc = String(item.description || '').toLowerCase();
+      const query = searchQuery.toLowerCase();
+      return name.includes(query) || desc.includes(query);
+    })
+    .sort((a, b) => {
+      const dateA = a?.created_at ? new Date(a.created_at).getTime() : 0;
+      const dateB = b?.created_at ? new Date(b.created_at).getTime() : 0;
+      return dateB - dateA;
+    });
 
   return (
     <div className="space-y-8 max-w-7xl mx-auto">
@@ -191,53 +202,56 @@ export default function SpecializationsPage() {
         
         /* GRID VIEW MATRIX */
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-          {filteredItems.map((item) => (
-            <div
-              key={item.id}
-              className="group bg-white border border-slate-200 hover:border-teal-200 rounded-2xl p-6 shadow-sm hover:shadow-md transition-all duration-200 flex flex-col justify-between relative overflow-hidden"
-            >
-              <div className="absolute top-0 right-0 w-24 h-24 bg-teal-500/5 rounded-bl-full pointer-events-none group-hover:scale-110 transition-transform" />
+          {filteredItems.map((item) => {
+            if (!item) return null;
+            return (
+              <div
+                key={item.id}
+                className="group bg-white border border-slate-200 hover:border-teal-200 rounded-2xl p-6 shadow-sm hover:shadow-md transition-all duration-200 flex flex-col justify-between relative overflow-hidden"
+              >
+                <div className="absolute top-0 right-0 w-24 h-24 bg-teal-500/5 rounded-bl-full pointer-events-none group-hover:scale-110 transition-transform" />
 
-              <div>
-                <div className="flex items-start justify-between gap-3 mb-3">
-                  <div className="h-10 w-10 rounded-xl bg-teal-50 text-teal-600 border border-teal-100 flex items-center justify-center shrink-0">
-                    <Stethoscope className="h-5 w-5" />
+                <div>
+                  <div className="flex items-start justify-between gap-3 mb-3">
+                    <div className="h-10 w-10 rounded-xl bg-teal-50 text-teal-600 border border-teal-100 flex items-center justify-center shrink-0">
+                      <Stethoscope className="h-5 w-5" />
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <button 
+                        onClick={() => setEditingItem(item)}
+                        className="p-1.5 text-slate-400 hover:text-teal-600 hover:bg-teal-50 rounded-lg transition-colors"
+                      >
+                        <Edit3 className="h-4 w-4" />
+                      </button>
+                      <button 
+                        onClick={() => setDeletingId(item.id)}
+                        className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-1">
-                    <button 
-                      onClick={() => setEditingItem(item)}
-                      className="p-1.5 text-slate-400 hover:text-teal-600 hover:bg-teal-50 rounded-lg transition-colors"
-                    >
-                      <Edit3 className="h-4 w-4" />
-                    </button>
-                    <button 
-                      onClick={() => setDeletingId(item.id)}
-                      className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </button>
-                  </div>
+
+                  <h3 className="font-bold text-slate-900 text-base group-hover:text-teal-700 transition-colors">
+                    {item.name}
+                  </h3>
+                  <p className="text-xs text-slate-600 mt-2 leading-relaxed line-clamp-3">
+                    {item.description || 'No description provided.'}
+                  </p>
                 </div>
 
-                <h3 className="font-bold text-slate-900 text-base group-hover:text-teal-700 transition-colors">
-                  {item.name}
-                </h3>
-                <p className="text-xs text-slate-600 mt-2 leading-relaxed line-clamp-3">
-                  {item.description}
-                </p>
+                <div className="pt-4 mt-4 border-t border-slate-100 flex items-center justify-between text-[10px] text-slate-400 font-medium">
+                  <span className="flex items-center gap-1">
+                    <Clock className="h-3 w-3" />
+                    {item.created_at ? new Date(item.created_at).toLocaleDateString() : 'N/A'}
+                  </span>
+                  <span className="px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 font-semibold truncate max-w-[120px]">
+                    ID: {item.id}
+                  </span>
+                </div>
               </div>
-
-              <div className="pt-4 mt-4 border-t border-slate-100 flex items-center justify-between text-[10px] text-slate-400 font-medium">
-                <span className="flex items-center gap-1">
-                  <Clock className="h-3 w-3" />
-                  {new Date(item.created_at).toLocaleDateString()}
-                </span>
-                <span className="px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 font-semibold">
-                  ID: {item.id}
-                </span>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
 
       ) : (
@@ -255,40 +269,43 @@ export default function SpecializationsPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 text-xs">
-                {filteredItems.map((item) => (
-                  <tr key={item.id} className="hover:bg-teal-50/20 transition-colors">
-                    <td className="px-6 py-4 font-bold text-slate-900">
-                      <div className="flex items-center gap-3">
-                        <div className="h-8 w-8 rounded-lg bg-teal-50 text-teal-600 flex items-center justify-center shrink-0 border border-teal-100">
-                          <Stethoscope className="h-4 w-4" />
+                {filteredItems.map((item) => {
+                  if (!item) return null;
+                  return (
+                    <tr key={item.id} className="hover:bg-teal-50/20 transition-colors">
+                      <td className="px-6 py-4 font-bold text-slate-900">
+                        <div className="flex items-center gap-3">
+                          <div className="h-8 w-8 rounded-lg bg-teal-50 text-teal-600 flex items-center justify-center shrink-0 border border-teal-100">
+                            <Stethoscope className="h-4 w-4" />
+                          </div>
+                          <span>{item.name}</span>
                         </div>
-                        <span>{item.name}</span>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 text-slate-600 max-w-md truncate">
-                      {item.description}
-                    </td>
-                    <td className="px-6 py-4 text-slate-400 font-medium">
-                      {new Date(item.created_at).toLocaleDateString()}
-                    </td>
-                    <td className="px-6 py-4 text-right">
-                      <div className="flex items-center justify-end gap-2">
-                        <button 
-                          onClick={() => setEditingItem(item)}
-                          className="p-1.5 text-slate-400 hover:text-teal-600 hover:bg-slate-100 rounded-lg"
-                        >
-                          <Edit3 className="h-4 w-4" />
-                        </button>
-                        <button 
-                          onClick={() => setDeletingId(item.id)}
-                          className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                      </td>
+                      <td className="px-6 py-4 text-slate-600 max-w-md truncate">
+                        {item.description || 'No description provided.'}
+                      </td>
+                      <td className="px-6 py-4 text-slate-400 font-medium">
+                        {item.created_at ? new Date(item.created_at).toLocaleDateString() : 'N/A'}
+                      </td>
+                      <td className="px-6 py-4 text-right">
+                        <div className="flex items-center justify-end gap-2">
+                          <button 
+                            onClick={() => setEditingItem(item)}
+                            className="p-1.5 text-slate-400 hover:text-teal-600 hover:bg-slate-100 rounded-lg"
+                          >
+                            <Edit3 className="h-4 w-4" />
+                          </button>
+                          <button 
+                            onClick={() => setDeletingId(item.id)}
+                            className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -332,8 +349,8 @@ function EditModal({
   onSave: (data: { name: string; description: string }) => void;
   isPending: boolean;
 }) {
-  const [name, setName] = useState(item.name);
-  const [description, setDescription] = useState(item.description);
+  const [name, setName] = useState(item?.name || '');
+  const [description, setDescription] = useState(item?.description || '');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();

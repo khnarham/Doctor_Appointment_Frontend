@@ -9,6 +9,7 @@ import { DoctorFilters } from '@/components/patient/DoctorFilterBar';
 import { DoctorCard } from '@/components/patient/DoctorCard';
 import { SlotBookingModal } from '@/components/patient/SlotBookingModal';
 import { ListSpecialization } from '../api/specialization';
+import { Navbar } from '@/components/Navbar';
 
 export interface PatientProfile {
   id: string;
@@ -23,7 +24,7 @@ export interface PatientProfile {
 
 interface DoctorQueryParams {
   search?: string;
-  specializationID?: string;
+  specializationID?: string | null;
   maxFee?: number;
   page?: number;
   limit?: number;
@@ -32,8 +33,11 @@ interface DoctorQueryParams {
 async function fetchDoctors(params: DoctorQueryParams): Promise<Doctor[]> {
   const res = await api.get('/auth/doctors', {
     params: {
-      search: params.search || undefined,
-      specializationID: params.specializationID || undefined,
+      search: params.search?.trim() || undefined,
+      // Agar specializationID nahi hai ya empty hai, toh undefined pass karo
+      specializationID: params.specializationID && params.specializationID.trim() !== '' 
+        ? params.specializationID 
+        : undefined,
       maxFee: params.maxFee && params.maxFee > 0 ? params.maxFee : undefined,
       page: params.page || 1,
       limit: params.limit || 10,
@@ -47,7 +51,6 @@ async function fetchDoctors(params: DoctorQueryParams): Promise<Doctor[]> {
   if (Array.isArray(rawData?.doctors)) return rawData.doctors;
   return [];
 }
-
 // 1. Fetch Patient Profile via Endpoint
 async function fetchCurrentPatient(): Promise<PatientProfile | null> {
   const res = await api.get('/auth/patients/me');
@@ -103,6 +106,7 @@ export default function PatientDoctorsPage() {
 
   return (
     <div className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8 space-y-8">
+      <Navbar/>
       <div>
         <h1 className="text-2xl font-black text-slate-900 tracking-tight">
           Find Your Specialist

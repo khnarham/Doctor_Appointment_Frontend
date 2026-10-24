@@ -48,7 +48,7 @@ export function SchedulesHeader() {
         <div className="shrink-0 flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
           
           <Link 
-            href="/admin/schedules/create" 
+            href="/dashboard/doctor/schedules/create" 
             className="px-4 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl text-xs font-bold flex items-center justify-center gap-2 transition-all active:scale-95 shadow-md shadow-indigo-600/20"
           >
             <Plus className="h-4 w-4" />

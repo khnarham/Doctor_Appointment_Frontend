@@ -6,6 +6,7 @@ import { serverFetch } from "@/lib/server-api";
 import { Metadata } from "next";
 import "./globals.css";
 import QueryProvider from "@/components/Providers/Query-provider";
+import { Navbar } from "@/components/Navbar";
 
 export const metadata: Metadata = {
   title: "HealthCare Clinic | Expert Doctors & Instant Booking",

@@ -13,7 +13,7 @@ export interface SelectOption {
 interface CustomSelectProps {
   label?: string;
   icon?: React.ReactNode;
-  options: SelectOption[];
+  options?: SelectOption[]; // Made optional to prevent undefined crashes
   value?: string;
   onChange: (value: string) => void;
   placeholder?: string;
@@ -26,7 +26,7 @@ interface CustomSelectProps {
 export function CustomSelect({
   label,
   icon,
-  options,
+  options = [], // Default to empty array
   value,
   onChange,
   placeholder = 'Select an option...',
@@ -39,7 +39,11 @@ export function CustomSelect({
   const [searchTerm, setSearchTerm] = useState('');
   const containerRef = useRef<HTMLDivElement>(null);
 
-  const selectedOption = options.find((opt) => opt.id === value);
+  // Ensure options is always a valid array
+  const safeOptions = Array.isArray(options) ? options : [];
+
+  // Safe find operation
+  const selectedOption = safeOptions.find((opt) => opt && opt.id === value);
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -52,9 +56,11 @@ export function CustomSelect({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const filteredOptions = options.filter((opt) =>
-    opt.name.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // Safe filter operation with null guards
+  const filteredOptions = safeOptions.filter((opt) => {
+    if (!opt || !opt.name) return false;
+    return opt.name.toLowerCase().includes(searchTerm.toLowerCase());
+  });
 
   return (
     <div className="space-y-1.5" ref={containerRef}>
@@ -99,7 +105,7 @@ export function CustomSelect({
         {isOpen && !isLoading && (
           <div className="absolute z-50 mt-1.5 w-full bg-white border border-slate-200/80 rounded-2xl shadow-xl shadow-slate-900/5 py-1.5 overflow-hidden animate-in fade-in-50 zoom-in-95 duration-100">
             {/* Search Input inside Dropdown */}
-            {searchable && options.length > 5 && (
+            {searchable && safeOptions.length > 5 && (
               <div className="px-2.5 pb-2 pt-1 border-b border-slate-100">
                 <div className="relative flex items-center">
                   <Search className="h-3.5 w-3.5 text-slate-400 absolute left-2.5 pointer-events-none" />
@@ -122,6 +128,7 @@ export function CustomSelect({
                 </div>
               ) : (
                 filteredOptions.map((opt) => {
+                  if (!opt) return null;
                   const isSelected = opt.id === value;
                   return (
                     <button

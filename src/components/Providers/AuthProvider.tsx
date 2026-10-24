@@ -14,11 +14,11 @@ export function AuthStateHydrator({
   const initialized = useRef(false);
 
   if (!initialized.current) {
-    useAuthStore.setState({ user });
+    if (user) {
+      useAuthStore.setState({ user });
+    }
     initialized.current = true;
   }
-  console.log("User",user);
-  
 
   return <>{children}</>;
 }

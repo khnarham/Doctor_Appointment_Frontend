@@ -13,7 +13,7 @@ export function RegistrationHeroPanel() {
           <Stethoscope className="h-5 w-5" />
         </div>
         <div>
-          <span className="text-lg font-black text-white tracking-wide block leading-none">PulseCare</span>
+          <span className="text-lg font-black text-white tracking-wide block leading-none">CareClinic</span>
           <span className="text-[10px] text-teal-400 font-semibold uppercase tracking-widest">Clinical Engine</span>
         </div>
       </div>

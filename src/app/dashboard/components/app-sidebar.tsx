@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { ROLE_NAVIGATION, NavItem } from '@/config/navigation';
 import { UserRole } from '@/types/DashboardAuth';
 import {
@@ -25,6 +25,8 @@ import {
   ChevronRight
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useAuthStore } from '@/store/useAuthStore';
+import { useState } from 'react';
 
 const ICON_MAP: Record<string, React.ElementType> = {
   LayoutDashboard,
@@ -45,11 +47,13 @@ const ICON_MAP: Record<string, React.ElementType> = {
 };
 
 interface AppSidebarProps {
-  role: UserRole;
+  role: string;
   user?: { name: string; email: string };
   isMobileOpen?: boolean;
   onMobileClose?: () => void;
 }
+
+
 
 export function AppSidebar({ role, user, isMobileOpen = false, onMobileClose }: AppSidebarProps) {
   const pathname = usePathname();

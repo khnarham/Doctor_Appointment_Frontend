@@ -16,6 +16,8 @@ import {
 } from 'lucide-react';
 import { UserRole } from '@/types/DashboardAuth';
 import { cn } from '@/lib/utils';
+import { useRouter } from 'next/navigation';
+import { useAuthStore } from '@/store/useAuthStore';
 
 interface Notification {
   id: string;
@@ -32,7 +34,7 @@ const MOCK_NOTIFICATIONS: Notification[] = [
 
 interface DashboardHeaderProps {
   userName?: string;
-  userRole?: UserRole;
+  userRole?: string;
   onMobileMenuToggle?: () => void;
   onPrimaryAction?: () => void;
 }
@@ -43,6 +45,13 @@ export function DashboardHeader({
   onMobileMenuToggle,
   onPrimaryAction
 }: DashboardHeaderProps) {
+      const router = useRouter();
+
+
+  const [activeSection, setActiveSection] = useState<string>("Home");
+  const [isScrolled, setIsScrolled] = useState<boolean>(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState<boolean>(false);
+  const [profileDropdownOpen, setProfileDropdownOpen] = useState<boolean>(false);
   const [notifications, setNotifications] = useState<Notification[]>(MOCK_NOTIFICATIONS);
   const [showNotifications, setShowNotifications] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
@@ -53,8 +62,57 @@ export function DashboardHeader({
     setNotifications(prev => prev.map(n => ({ ...n, read: true })));
   };
 
+
+  const handleLogout = async () => {
+
+  try {
+    await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080/api/v1"}/auth/logout`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      credentials: "include", 
+    });
+  } catch (err) {
+    console.error("Logout request error:", err);
+  } finally {
+    useAuthStore.setState({ user: null });
+    setProfileDropdownOpen(false);
+    setMobileMenuOpen(false);
+    router.push("/Auth");
+  }
+};
+
+
+
   // Dynamic Button Configuration based on User Role
   const renderRoleActionButton = () => {
+      const handleLogout = async () => {
+    const router = useRouter();
+
+  const [activeSection, setActiveSection] = useState<string>("Home");
+  const [isScrolled, setIsScrolled] = useState<boolean>(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState<boolean>(false);
+  const [profileDropdownOpen, setProfileDropdownOpen] = useState<boolean>(false);
+
+  try {
+    await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080/api/v1"}/auth/logout`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      credentials: "include", 
+    });
+  } catch (err) {
+    console.error("Logout request error:", err);
+  } finally {
+    useAuthStore.setState({ user: null });
+    setProfileDropdownOpen(false);
+    setMobileMenuOpen(false);
+    router.push("/Auth");
+  }
+};
+
     switch (userRole) {
       case 'ADMIN':
         return (
@@ -218,7 +276,7 @@ export function DashboardHeader({
                 <Settings className="h-4 w-4 text-slate-400" />
                 Clinic Config
               </button>
-              <button className="w-full px-4 py-2 text-xs text-rose-600 hover:bg-rose-50 flex items-center gap-2 border-t border-slate-100 mt-1">
+              <button onClick={handleLogout} className="w-full px-4 py-2 text-xs text-rose-600 hover:bg-rose-50 flex items-center gap-2 border-t border-slate-100 mt-1">
                 <LogOut className="h-4 w-4 text-rose-500" />
                 Sign Out
               </button>
