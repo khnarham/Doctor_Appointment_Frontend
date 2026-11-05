@@ -93,7 +93,7 @@ export default function AdminLoginPage({ params }: AdminLoginPageProps) {
             </div>
             <div className="flex flex-col">
               <span className="text-lg font-bold tracking-tight text-zinc-900 leading-tight">
-                Vortex Admin
+                CareClinic Admin
               </span>
               <span className="text-[10px] font-semibold text-rose-600 tracking-widest uppercase">
                 Restricted Gateway

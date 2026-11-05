@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 
 const ACCESS_EXPIRY = parseInt(process.env.JWT_ACCESS_EXPIRY || "900", 10);
 const REFRESH_EXPIRY = parseInt(process.env.JWT_REFRESH_EXPIRY || "604800", 10);
+const BACKEND_URI = process.env.BACKEND_URI || "http://localhost:8080";
 
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
@@ -16,7 +17,6 @@ export async function GET(request: NextRequest) {
     });
   }
 
-  
   const baseUrl = request.nextUrl.origin;
 
   if (!token) {
@@ -25,7 +25,7 @@ export async function GET(request: NextRequest) {
 
   try {
     const backendRes = await fetch(
-      `http://localhost:8080/api/v1/auth/verify-email?token=${encodeURIComponent(token)}`,
+      `${BACKEND_URI}/api/v1/auth/verify-email?token=${encodeURIComponent(token)}`,
       {
         method: "GET",
         headers: {
