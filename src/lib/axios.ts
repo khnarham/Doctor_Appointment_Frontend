@@ -2,7 +2,7 @@ import axios from 'axios';
 
 export const api = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api/v1',
-  withCredentials: true, 
+  withCredentials: true,
 });
 
 let isRefreshing = false;
@@ -27,15 +27,12 @@ api.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
 
+    // Agar refresh endpoint khud fail ho jaye, toh mazeed loop se bachne ke liye direct reject karo
     if (originalRequest?.url?.includes('/auth/refresh')) {
-      if (typeof window !== 'undefined') {
-        window.location.href = '/Auth';
-      }
       return Promise.reject(error);
     }
 
     if (error.response?.status === 401 && !originalRequest._retry) {
-      
       if (isRefreshing) {
         return new Promise((resolve, reject) => {
           failedQueue.push({ resolve, reject });
@@ -54,9 +51,15 @@ api.interceptors.response.use(
       } catch (refreshError) {
         processQueue(refreshError);
 
+        // SAFE GUARD: Sirf tab redirect karo jab user pehle se /Auth page par NA ho
+        // Is se bar-bar window reload / redirect ka infinite loop kabhi nahi banega!
         if (typeof window !== 'undefined') {
-          window.location.href = '/Auth';
+          const currentPath = window.location.pathname;
+          if (!currentPath.includes('/Auth')) {
+            window.location.href = '/Auth';
+          }
         }
+
         return Promise.reject(refreshError);
       } finally {
         isRefreshing = false;
