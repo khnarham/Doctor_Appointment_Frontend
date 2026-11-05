@@ -152,8 +152,8 @@ async function refreshLockDeduplicator(
 
 export async function proxy(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
-  const isProduction = process.env.NODE_ENV === "production" || request.nextUrl.protocol === "https:";
-
+// Is line ko replace karke yeh kar do:
+const isProduction = process.env.NODE_ENV === "production" || process.env.VERCEL_ENV === "production" || process.env.VERCEL === "1";
   const accessToken = request.cookies.get("access_token")?.value;
   const refreshToken = request.cookies.get("refresh_token")?.value;
   let token = accessToken;
