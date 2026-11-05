@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Doctor } from '@/types/booking';
 import { Loader2, AlertCircle, UserX } from 'lucide-react';
@@ -34,7 +34,6 @@ async function fetchDoctors(params: DoctorQueryParams): Promise<Doctor[]> {
   const res = await api.get('/auth/doctors', {
     params: {
       search: params.search?.trim() || undefined,
-      // Agar specializationID nahi hai ya empty hai, toh undefined pass karo
       specializationID: params.specializationID && params.specializationID.trim() !== '' 
         ? params.specializationID 
         : undefined,
@@ -51,10 +50,15 @@ async function fetchDoctors(params: DoctorQueryParams): Promise<Doctor[]> {
   if (Array.isArray(rawData?.doctors)) return rawData.doctors;
   return [];
 }
-// 1. Fetch Patient Profile via Endpoint
+
 async function fetchCurrentPatient(): Promise<PatientProfile | null> {
-  const res = await api.get('/auth/patients/me');
-  return res.data?.data || null;
+  try {
+    const res = await api.get('/auth/patients/me');
+    return res.data?.data || null;
+  } catch (error) {
+    // Agar patient profile nahi milti ya unauthorized hai, toh null return karo taake infinite loop na ho
+    return null;
+  }
 }
 
 export default function PatientDoctorsPage() {
@@ -67,14 +71,18 @@ export default function PatientDoctorsPage() {
   const [bookingDate, setBookingDate] = useState<string>('');
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  // 2. Query for Patient Profile (Authenticated user)
+  // Patient Profile Query (retry false kar diya hai taake loop na bane)
   const { data: patient = null, isLoading: isPatientLoading } = useQuery({
     queryKey: ['current-patient'],
     queryFn: fetchCurrentPatient,
-    staleTime: 1000 * 60 * 10, // 10 mins cache
+    staleTime: 1000 * 60 * 10,
+    retry: false, // <-- Sabse important fix infinite loop rokne ke liye
   });
  
-  console.log("patient2.0" , patient)
+  useEffect(() => {
+    console.log("patient2.0", patient);
+  }, [patient]);
+
   const {
     data: doctors = [],
     isLoading,
@@ -106,7 +114,7 @@ export default function PatientDoctorsPage() {
 
   return (
     <div className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8 space-y-8">
-      <Navbar/>
+      <Navbar />
       <div>
         <h1 className="text-2xl font-black text-slate-900 tracking-tight">
           Find Your Specialist
@@ -163,7 +171,6 @@ export default function PatientDoctorsPage() {
         </div>
       )}
 
-      {/* 3. Patient prop direct pass kar diya */}
       <SlotBookingModal
         patient={patient}
         doctor={activeDoctor}
