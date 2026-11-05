@@ -38,37 +38,8 @@ export async function GET(request: NextRequest) {
       return NextResponse.redirect(new URL("/Auth?error=invalid_token", baseUrl));
     }
 
-    // 2. Redirect response taiyar karo jo user ko dashboard ya home par le jaye
-    const redirectResponse = NextResponse.redirect(new URL("/", baseUrl));
-
-    // 3. Backend ke Set-Cookie headers ko uthao aur browser ko forward kar do
-    const setCookieHeaders = backendRes.headers.getSetCookie();
-
-    if (setCookieHeaders && setCookieHeaders.length > 0) {
-      const isProduction = process.env.NODE_ENV === "production" || process.env.VERCEL === "1";
-
-      setCookieHeaders.forEach((cookieStr) => {
-        let modifiedCookie = cookieStr;
-
-        if (isProduction) {
-          // Ensure karo ke cross-domain (Vercel -> Railway) ke liye SameSite=None aur Secure laazmi ho
-          if (!modifiedCookie.toLowerCase().includes("samesite=")) {
-            modifiedCookie += "; SameSite=None";
-          } else {
-            modifiedCookie = modifiedCookie.replace(/samesite=[a-z]+/i, "SameSite=None");
-          }
-
-          if (!modifiedCookie.toLowerCase().includes("secure")) {
-            modifiedCookie += "; Secure";
-          }
-        }
-
-        // Browser ko backend wali original cookies pass kar do
-        redirectResponse.headers.append("Set-Cookie", modifiedCookie);
-      });
-    }
-
-    return redirectResponse;
+    // 2. Seedha user ko home/dashboard par redirect kar do (Baghair kisi cookie manipulation ke)
+    return NextResponse.redirect(new URL("/", baseUrl));
 
   } catch (error) {
     console.error("Verification Route Error:", error);
