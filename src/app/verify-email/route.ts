@@ -47,19 +47,23 @@ export async function GET(request: NextRequest) {
 
     if (accessToken && refreshToken) {
       const cookieStore = await cookies();
+      const isProduction = process.env.NODE_ENV === "production" || process.env.VERCEL === "1";
+      
+      // Cross-domain (Vercel + Railway) ke liye 'none' aur secure true hona lazmi hai
+      const sameSiteValue = isProduction ? "none" : "lax";
 
       cookieStore.set("access_token", accessToken, {
         httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "lax",
+        secure: isProduction,
+        sameSite: sameSiteValue as "none" | "lax" | "strict",
         path: "/",
         maxAge: ACCESS_EXPIRY,
       });
 
       cookieStore.set("refresh_token", refreshToken, {
         httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "lax",
+        secure: isProduction,
+        sameSite: sameSiteValue as "none" | "lax" | "strict",
         path: "/",
         maxAge: REFRESH_EXPIRY,
       });
@@ -67,6 +71,8 @@ export async function GET(request: NextRequest) {
       if (authData?.role) {
         cookieStore.set("user_role", String(authData.role), {
           httpOnly: false,
+          secure: isProduction,
+          sameSite: sameSiteValue as "none" | "lax" | "strict",
           path: "/",
           maxAge: 60 * 60 * 24 * 7,
         });
