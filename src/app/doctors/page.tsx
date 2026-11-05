@@ -71,12 +71,11 @@ export default function PatientDoctorsPage() {
   const [bookingDate, setBookingDate] = useState<string>('');
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  // Patient Profile Query (retry false kar diya hai taake loop na bane)
   const { data: patient = null, isLoading: isPatientLoading } = useQuery({
     queryKey: ['current-patient'],
     queryFn: fetchCurrentPatient,
     staleTime: 1000 * 60 * 10,
-    retry: false, // <-- Sabse important fix infinite loop rokne ke liye
+    retry: false, 
   });
  
   useEffect(() => {

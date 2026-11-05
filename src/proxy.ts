@@ -39,7 +39,6 @@ function isAllowedRoute(pathname: string, role: Role): boolean {
       role === "RECEPTIONIST";
   }
 
-  // Wildcard prefix check for deep sub-routes & query params safety
   if (role === "RECEPTIONIST" && pathname.startsWith("/dashboard/receptionist")) {
     return true;
   }
@@ -64,7 +63,6 @@ function getRoleFromToken(token: string): Role | null {
 
     let base64 = parts[1].replace(/-/g, "+").replace(/_/g, "/");
     
-    // Fix missing base64 padding to prevent atob crashes in Edge runtime
     while (base64.length % 4) {
       base64 += "=";
     }
@@ -101,7 +99,8 @@ function redirectToAuth(request: NextRequest) {
 }
 
 async function refreshLockDeduplicator(
-  refreshToken: string
+  refreshToken: string,
+  isProduction: boolean
 ): Promise<string[] | null> {
   if (activeRefreshes.has(refreshToken)) {
     return activeRefreshes.get(refreshToken)!;
@@ -130,8 +129,11 @@ async function refreshLockDeduplicator(
       const json = await refreshResponse.json().catch(() => null);
 
       if (json?.data?.access_token) {
-        const newAccess = `access_token=${json.data.access_token}; Path=/; HttpOnly; SameSite=Lax`;
-        const newRefresh = `refresh_token=${json.data.refresh_token || refreshToken}; Path=/; HttpOnly; SameSite=Lax`;
+        // FIXED: Cross-domain ke liye SameSite=None aur Secure zaroori hai production par
+        const sameSiteAttr = isProduction ? "SameSite=None; Secure" : "SameSite=Lax";
+        
+        const newAccess = `access_token=${json.data.access_token}; Path=/; HttpOnly; ${sameSiteAttr}`;
+        const newRefresh = `refresh_token=${json.data.refresh_token || refreshToken}; Path=/; HttpOnly; ${sameSiteAttr}`;
 
         return [newAccess, newRefresh];
       }
@@ -150,6 +152,7 @@ async function refreshLockDeduplicator(
 
 export async function proxy(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
+  const isProduction = process.env.NODE_ENV === "production" || request.nextUrl.protocol === "https:";
 
   const accessToken = request.cookies.get("access_token")?.value;
   const refreshToken = request.cookies.get("refresh_token")?.value;
@@ -181,32 +184,9 @@ export async function proxy(request: NextRequest) {
     }
   }
 
-  const blockedRoutes = [
-    "/doctor-registration",
-    "/accept-invite/receptionist-register",
-  ];
-
-  if (
-    blockedRoutes.some(
-      (route) => pathname === route || pathname.startsWith(`${route}/`)
-    )
-  ) {
-    const isLoggedIn = !!token;
-    const isPatient = role === "PATIENT";
-    const isTokenShort = token ? token.length < 20 : false;
-
-    if ((isLoggedIn || isPatient) && isTokenShort) {
-      const url = request.nextUrl.clone();
-      url.pathname = "/Auth";
-      url.search = "";
-
-      return NextResponse.redirect(url);
-    }
-  }
-
   if (!token && refreshToken) {
     const newSetCookieHeaders =
-      await refreshLockDeduplicator(refreshToken);
+      await refreshLockDeduplicator(refreshToken, isProduction);
 
     if (newSetCookieHeaders) {
       const cookiePairs = newSetCookieHeaders.map((c) => c.split(";")[0]);
