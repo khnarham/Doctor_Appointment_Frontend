@@ -1,8 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { cookies } from "next/headers";
 
-const ACCESS_EXPIRY = parseInt(process.env.JWT_ACCESS_EXPIRY || "900", 10);
-const REFRESH_EXPIRY = parseInt(process.env.JWT_REFRESH_EXPIRY || "604800", 10);
 const BACKEND_URI = process.env.BACKEND_URI || "http://localhost:8080";
 
 export async function GET(request: NextRequest) {
@@ -20,10 +17,11 @@ export async function GET(request: NextRequest) {
   const baseUrl = request.nextUrl.origin;
 
   if (!token) {
-    return NextResponse.redirect(new URL("/login?error=missing_token", baseUrl));
+    return NextResponse.redirect(new URL("/Auth?error=missing_token", baseUrl));
   }
 
   try {
+    // 1. Backend par email verification request bhejo
     const backendRes = await fetch(
       `${BACKEND_URI}/api/v1/auth/verify-email?token=${encodeURIComponent(token)}`,
       {
@@ -32,58 +30,48 @@ export async function GET(request: NextRequest) {
           "Content-Type": "application/json",
         },
         cache: "no-store",
+        redirect: "manual",
       }
     );
 
-    if (!backendRes.ok) {
-      return NextResponse.redirect(new URL("/login?error=invalid_token", baseUrl));
+    if (!backendRes.ok && backendRes.status !== 302 && backendRes.status !== 301) {
+      return NextResponse.redirect(new URL("/Auth?error=invalid_token", baseUrl));
     }
 
-    const resData = await backendRes.json();
-    const authData = resData?.data;
+    // 2. Redirect response taiyar karo jo user ko dashboard ya home par le jaye
+    const redirectResponse = NextResponse.redirect(new URL("/", baseUrl));
 
-    const accessToken = authData?.accessToken || authData?.access_token;
-    const refreshToken = authData?.refreshToken || authData?.refresh_token;
+    // 3. Backend ke Set-Cookie headers ko uthao aur browser ko forward kar do
+    const setCookieHeaders = backendRes.headers.getSetCookie();
 
-    if (accessToken && refreshToken) {
-      const cookieStore = await cookies();
+    if (setCookieHeaders && setCookieHeaders.length > 0) {
       const isProduction = process.env.NODE_ENV === "production" || process.env.VERCEL === "1";
-      
-      // Cross-domain (Vercel + Railway) ke liye 'none' aur secure true hona lazmi hai
-      const sameSiteValue = isProduction ? "none" : "lax";
 
-      cookieStore.set("access_token", accessToken, {
-        httpOnly: true,
-        secure: isProduction,
-        sameSite: sameSiteValue as "none" | "lax" | "strict",
-        path: "/",
-        maxAge: ACCESS_EXPIRY,
+      setCookieHeaders.forEach((cookieStr) => {
+        let modifiedCookie = cookieStr;
+
+        if (isProduction) {
+          // Ensure karo ke cross-domain (Vercel -> Railway) ke liye SameSite=None aur Secure laazmi ho
+          if (!modifiedCookie.toLowerCase().includes("samesite=")) {
+            modifiedCookie += "; SameSite=None";
+          } else {
+            modifiedCookie = modifiedCookie.replace(/samesite=[a-z]+/i, "SameSite=None");
+          }
+
+          if (!modifiedCookie.toLowerCase().includes("secure")) {
+            modifiedCookie += "; Secure";
+          }
+        }
+
+        // Browser ko backend wali original cookies pass kar do
+        redirectResponse.headers.append("Set-Cookie", modifiedCookie);
       });
-
-      cookieStore.set("refresh_token", refreshToken, {
-        httpOnly: true,
-        secure: isProduction,
-        sameSite: sameSiteValue as "none" | "lax" | "strict",
-        path: "/",
-        maxAge: REFRESH_EXPIRY,
-      });
-
-      if (authData?.role) {
-        cookieStore.set("user_role", String(authData.role), {
-          httpOnly: false,
-          secure: isProduction,
-          sameSite: sameSiteValue as "none" | "lax" | "strict",
-          path: "/",
-          maxAge: 60 * 60 * 24 * 7,
-        });
-      }
-
-      return NextResponse.redirect(new URL("/", baseUrl));
-    } else {
-      return NextResponse.redirect(new URL("/login?error=invalid_response", baseUrl));
     }
+
+    return redirectResponse;
+
   } catch (error) {
     console.error("Verification Route Error:", error);
-    return NextResponse.redirect(new URL("/login?error=server_error", baseUrl));
+    return NextResponse.redirect(new URL("/Auth?error=server_error", baseUrl));
   }
 }
